@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	planmodifier "github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/softwarehuset/mssql/internal/model"
 	"github.com/softwarehuset/mssql/internal/sql"
@@ -15,31 +17,40 @@ import (
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
-var _ resource.Resource = &AadLoginResource{}
+var _ resource.Resource = &SqlLoginResource{}
 
-func NewAadLoginResource() resource.Resource {
-	return &AadLoginResource{}
+func NewSqlLoginResource() resource.Resource {
+	return &SqlLoginResource{}
 }
 
 // AadLoginResource defines the resource implementation.
-type AadLoginResource struct {
+type SqlLoginResource struct {
 	client *http.Client
 }
 
-func (r *AadLoginResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_aad_login_v2"
+func (r *SqlLoginResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_sql_login_v2"
 }
 
-func (r *AadLoginResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *SqlLoginResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		// This description is used by the documentation generator and the language server.
 		MarkdownDescription: "Example resource",
 
 		Attributes: map[string]schema.Attribute{
-			"aad_login_name": schema.StringAttribute{
+			"login_name": schema.StringAttribute{
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 				MarkdownDescription: "Example configurable attribute",
 				Optional:            false,
 				Required:            true,
+			},
+			"login_password": schema.StringAttribute{
+				MarkdownDescription: "Example configurable attribute",
+				Optional:            false,
+				Required:            true,
+				Sensitive:           true,
 			},
 			"default_database": DefaultDatabaseSchemaAttribute(),
 			"default_language": DefaultLanguageSchemaAttribute(),
@@ -48,7 +59,7 @@ func (r *AadLoginResource) Schema(ctx context.Context, req resource.SchemaReques
 	}
 }
 
-func (r *AadLoginResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+func (r *SqlLoginResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	// Prevent panic if the provider has not been configured.
 	if req.ProviderData == nil {
 		return
@@ -68,14 +79,14 @@ func (r *AadLoginResource) Configure(ctx context.Context, req resource.Configure
 	r.client = client
 }
 
-func (r *AadLoginResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var data model.AadLogin
+func (r *SqlLoginResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	var data model.SqlUserLogin
 	tflog.Info(ctx, fmt.Sprintf("CreateRequest: %v", data))
 	// Read Terraform plan data into the model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
 
 	var sqlClient, _ = sql.GetFactory().GetSqlClient(ctx, *data.Server)
-	err := sqlClient.(sql.AadLoginConnector).CreateAadLogin(ctx, data.AadLoginName.ValueString(), data.DefaultDatabase.ValueString(), data.DefaultLanguage.ValueString())
+	err := sqlClient.(sql.SqlLoginConnector).CreateLogin(ctx, data.LoginName.ValueString(), data.LoginPassword.ValueString(), data.DefaultDatabase.ValueString(), data.DefaultLanguage.ValueString())
 	if err != nil {
 		tflog.Error(ctx, err.Error())
 		resp.Diagnostics.AddError(
@@ -87,8 +98,8 @@ func (r *AadLoginResource) Create(ctx context.Context, req resource.CreateReques
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
-func (r *AadLoginResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var data model.AadLogin
+func (r *SqlLoginResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var data model.SqlUserLogin
 
 	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
@@ -109,8 +120,8 @@ func (r *AadLoginResource) Read(ctx context.Context, req resource.ReadRequest, r
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
-func (r *AadLoginResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var data model.AadLogin
+func (r *SqlLoginResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var data model.SqlUserLogin
 
 	// Read Terraform plan data into the model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
@@ -120,7 +131,7 @@ func (r *AadLoginResource) Update(ctx context.Context, req resource.UpdateReques
 	}
 
 	var sqlClient, _ = GetSqlClientFactory().GetSqlClient(ctx, *data.Server)
-	sqlClient.(sql.AadLoginConnector).CreateAadLogin(ctx, data.AadLoginName.String(), data.DefaultDatabase.String(), data.DefaultLanguage.String())
+	sqlClient.(sql.AadLoginConnector).CreateAadLogin(ctx, data.LoginName.String(), data.DefaultDatabase.String(), data.DefaultLanguage.String())
 
 	if sqlClient == nil {
 
@@ -137,14 +148,14 @@ func (r *AadLoginResource) Update(ctx context.Context, req resource.UpdateReques
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
-func (r *AadLoginResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var data model.AadLogin
+func (r *SqlLoginResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var data model.SqlUserLogin
 	tflog.Info(ctx, fmt.Sprintf("CreateRequest: %v", data))
 	// Read Terraform plan data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
 
 	var sqlClient, _ = sql.GetFactory().GetSqlClient(ctx, *data.Server)
-	err := sqlClient.(sql.AadLoginConnector).DeleteAadLogin(ctx, data.AadLoginName.ValueString())
+	err := sqlClient.(sql.SqlLoginConnector).DeleteLogin(ctx, data.LoginName.ValueString())
 	if err != nil {
 		tflog.Error(ctx, err.Error())
 		resp.Diagnostics.AddError(

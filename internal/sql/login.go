@@ -6,12 +6,14 @@ import (
 	"github.com/softwarehuset/mssql/internal/model"
 )
 
-func (c *Connector) GetLogin(ctx context.Context, name string) (*model.Login, error) {
-	var login model.Login
+var _ SqlLoginConnector = &Connector{}
+
+func (c *Connector) GetLogin(ctx context.Context, name string) (*model.SqlUserLogin, error) {
+	var login model.SqlUserLogin
 	err := c.QueryRowContext(ctx,
-		"SELECT principal_id, name, default_database_name, default_language_name FROM [master].[sys].[sql_logins] WHERE [name] = @name",
+		"SELECT name, default_database_name, default_language_name FROM [master].[sys].[sql_logins] WHERE [name] = @name",
 		func(r *sql.Row) error {
-			return r.Scan(&login.PrincipalID, &login.LoginName, &login.DefaultDatabase, &login.DefaultLanguage)
+			return r.Scan(&login.LoginName, &login.DefaultDatabase, &login.DefaultLanguage)
 		},
 		sql.Named("name", name),
 	)
@@ -109,4 +111,11 @@ func (c *Connector) killSessionsForLogin(ctx context.Context, name string) error
           CLOSE sessionsToKill
           DEALLOCATE sessionsToKill`
 	return c.ExecContext(ctx, cmd, sql.Named("name", name))
+}
+
+type SqlLoginConnector interface {
+	CreateLogin(ctx context.Context, name, password, defaultDatabase, defaultLanguage string) error
+	GetLogin(ctx context.Context, name string) (*model.SqlUserLogin, error)
+	UpdateLogin(ctx context.Context, name, password, defaultDatabase, defaultLanguage string) error
+	DeleteLogin(ctx context.Context, name string) error
 }

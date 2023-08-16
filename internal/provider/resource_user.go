@@ -137,7 +137,7 @@ package provider
 //	user := &model.User{
 //		Username:        username,
 //		ObjectId:        objectId,
-//		LoginName:       loginName,
+//		AadLoginName:       loginName,
 //		Password:        password,
 //		AuthType:        authType,
 //		DefaultSchema:   defaultSchema,
@@ -175,7 +175,7 @@ package provider
 //		logger.Info().Msgf("No user found for [%s].[%s]", database, username)
 //		data.SetId("")
 //	} else {
-//		if err = data.Set(loginNameProp, user.LoginName); err != nil {
+//		if err = data.Set(loginNameProp, user.AadLoginName); err != nil {
 //			return diag.FromErr(err)
 //		}
 //		if err = data.Set(sidStrProp, user.SIDStr); err != nil {

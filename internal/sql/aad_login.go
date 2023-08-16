@@ -11,7 +11,7 @@ func (c *Connector) GetAadLogin(ctx context.Context, name string) (*model.AadLog
 	err := c.QueryRowContext(ctx,
 		"SELECT name, default_database_name, default_language_name FROM [master].[sys].[server_principals] WHERE [type] NOT IN ('G', 'R') and [name] = @name",
 		func(r *sql.Row) error {
-			return r.Scan(&login.LoginName, &login.DefaultDatabase, &login.DefaultLanguage)
+			return r.Scan(&login.AadLoginName, &login.DefaultDatabase, &login.DefaultLanguage)
 		},
 		sql.Named("name", name),
 	)

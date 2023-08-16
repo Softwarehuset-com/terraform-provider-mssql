@@ -30,7 +30,15 @@ type User struct {
 }
 
 type AadLogin struct {
+	AadLoginName    types.String `tfsdk:"aad_login_name"`
+	DefaultDatabase types.String `tfsdk:"default_database"`
+	DefaultLanguage types.String `tfsdk:"default_language"`
+	Server          *Server      `tfsdk:"server"`
+}
+
+type SqlUserLogin struct {
 	LoginName       types.String `tfsdk:"login_name"`
+	LoginPassword   types.String `tfsdk:"login_password"`
 	DefaultDatabase types.String `tfsdk:"default_database"`
 	DefaultLanguage types.String `tfsdk:"default_language"`
 	Server          *Server      `tfsdk:"server"`

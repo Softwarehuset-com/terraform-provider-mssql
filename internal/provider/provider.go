@@ -7,7 +7,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/softwarehuset/mssql/internal/model"
 	"github.com/softwarehuset/mssql/internal/sql"
 	"net/http"
@@ -23,7 +22,6 @@ type Provider struct {
 }
 
 type ProviderModel struct {
-	Endpoint types.String `tfsdk:"endpoint"`
 }
 
 func (p *Provider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
@@ -33,12 +31,12 @@ func (p *Provider) Metadata(ctx context.Context, req provider.MetadataRequest, r
 
 func (p *Provider) Schema(ctx context.Context, req provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Attributes: map[string]schema.Attribute{
-			"endpoint": schema.StringAttribute{
-				MarkdownDescription: "Example provider attribute",
-				Optional:            true,
-			},
-		},
+		//Attributes: map[string]schema.Attribute{
+		//	"endpoint": schema.StringAttribute{
+		//		MarkdownDescription: "Example provider attribute",
+		//		Optional:            true,
+		//	},
+		//},
 	}
 }
 
@@ -62,6 +60,7 @@ func (p *Provider) Configure(ctx context.Context, req provider.ConfigureRequest,
 func (p *Provider) Resources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		NewAadLoginResource,
+		NewSqlLoginResource,
 	}
 }
 
