@@ -74,7 +74,7 @@ func (r *AadLoginResource) Create(ctx context.Context, req resource.CreateReques
 	// Read Terraform plan data into the model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
 
-	var sqlClient, _ = sql.GetFactory().GetSqlClient(ctx, *data.Server)
+	var sqlClient, _ = sql.GetFactory().GetSqlClient(ctx, *data.Server, "master")
 	err := sqlClient.(sql.AadLoginConnector).CreateAadLogin(ctx, data.AadLoginName.ValueString(), data.DefaultDatabase.ValueString(), data.DefaultLanguage.ValueString())
 	if err != nil {
 		tflog.Error(ctx, err.Error())
@@ -119,7 +119,7 @@ func (r *AadLoginResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	var sqlClient, _ = GetSqlClientFactory().GetSqlClient(ctx, *data.Server)
+	var sqlClient, _ = GetSqlClientFactory().GetSqlClient(ctx, *data.Server, "master")
 	sqlClient.(sql.AadLoginConnector).CreateAadLogin(ctx, data.AadLoginName.String(), data.DefaultDatabase.String(), data.DefaultLanguage.String())
 
 	if sqlClient == nil {
@@ -143,7 +143,7 @@ func (r *AadLoginResource) Delete(ctx context.Context, req resource.DeleteReques
 	// Read Terraform plan data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
 
-	var sqlClient, _ = sql.GetFactory().GetSqlClient(ctx, *data.Server)
+	var sqlClient, _ = sql.GetFactory().GetSqlClient(ctx, *data.Server, "master")
 	err := sqlClient.(sql.AadLoginConnector).DeleteAadLogin(ctx, data.AadLoginName.ValueString())
 	if err != nil {
 		tflog.Error(ctx, err.Error())

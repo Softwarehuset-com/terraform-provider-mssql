@@ -22,9 +22,10 @@ func GetFactory() model.SqlClientFactory {
 	return new(factory)
 }
 
-func (f factory) GetSqlClient(ctx context.Context, server model.Server) (interface{}, error) {
+func (f factory) GetSqlClient(ctx context.Context, server model.Server, database string) (interface{}, error) {
 	connector := &Connector{
-		Host: server.Host.ValueString(),
+		Host:     server.Host.ValueString(),
+		Database: database,
 		Port: func() string {
 			if server.Port.IsNull() {
 				return "1433"
@@ -158,9 +159,7 @@ func (c *Connector) db(ctx context.Context) (*sql.DB, error) {
 	if c == nil {
 		panic("No connector")
 	}
-	tflog.Info(ctx, "trying to get a log")
 	conn, err := c.connector(ctx)
-	tflog.Info(ctx, "got connection")
 	if err != nil {
 		return nil, err
 	}
@@ -174,10 +173,10 @@ func (c *Connector) db(ctx context.Context) (*sql.DB, error) {
 func (c *Connector) connector(ctx context.Context) (driver.Connector, error) {
 	query := url.Values{}
 	host := fmt.Sprintf("%s:%s", c.Host, c.Port)
-	tflog.Info(ctx, "I AM HERE!!!!")
 	if c.Database != "" {
 		query.Set("database", c.Database)
 	}
+
 	if c.Login != nil {
 		connectionString := (&url.URL{
 			Scheme:   "sqlserver",
@@ -188,7 +187,6 @@ func (c *Connector) connector(ctx context.Context) (driver.Connector, error) {
 		return mssql.NewConnector(connectionString)
 	}
 	if c.AzureCli != nil {
-		tflog.Info(ctx, "I FIMMODA HERE!!!!")
 
 		return &AccessTokenConnector{connection: *c}, nil
 	}
@@ -251,13 +249,12 @@ func connectLoop(ctx context.Context, connector driver.Connector, timeout time.D
 			if strings.Contains(err.Error(), "error retrieving access token") {
 				return nil, err
 			}
-			//log.Info().Err(err).Msg("failed to connect to database")
+			tflog.Info(ctx, err.Error())
 		}
 	}
 }
 
 func connect(ctx context.Context, connector driver.Connector) (*sql.DB, error) {
-	tflog.Info(ctx, "trying to connect")
 	db := sql.OpenDB(connector)
 	if err := db.Ping(); err != nil {
 		tflog.Info(ctx, err.Error())

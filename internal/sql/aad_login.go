@@ -43,7 +43,7 @@ func (c *Connector) CreateAadLogin(ctx context.Context, name, defaultDatabase, d
           EXEC (@sql)`
 	database := "master"
 	return c.
-		setDatabase(&database).
+		setDatabase(ctx, &database).
 		ExecContext(ctx, cmd,
 			sql.Named("name", name),
 			sql.Named("defaultDatabase", defaultDatabase),

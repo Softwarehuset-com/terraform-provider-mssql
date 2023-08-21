@@ -6,27 +6,32 @@ import (
 )
 
 type SqlClientFactory interface {
-	GetSqlClient(ctx context.Context, server Server) (interface{}, error)
+	GetSqlClient(ctx context.Context, server Server, database string) (interface{}, error)
 }
 
-type Login struct {
-	PrincipalID     int64
-	LoginName       string
-	DefaultDatabase string
-	DefaultLanguage string
+type UserResourceModel struct {
+	UserName        types.String `tfsdk:"username"`
+	LoginName       types.String `tfsdk:"login_name"`
+	DefaultSchema   types.String `tfsdk:"default_schema"`
+	DefaultLanguage types.String `tfsdk:"default_language"`
+	Database        types.String `tfsdk:"database"`
+	Roles           types.List   `tfsdk:"roles"`
+	Server          *Server      `tfsdk:"server"`
 }
 
 type User struct {
-	PrincipalID     int64
-	Username        string
-	ObjectId        string
-	LoginName       string
-	Password        string
-	SIDStr          string
-	AuthType        string
-	DefaultSchema   string
-	DefaultLanguage string
-	Roles           []string
+	PrincipalID     types.Int64  `tfsdk:"principal_id"`
+	UserName        types.String `tfsdk:"username"`
+	ObjectId        types.String `tfsdk:"object_id"`
+	LoginName       types.String `tfsdk:"login_name"`
+	Password        types.String `tfsdk:"password"`
+	SIDStr          types.String `tfsdk:"sid_str"`
+	AuthType        types.String `tfsdk:"auth_type"`
+	DefaultSchema   types.String `tfsdk:"default_schema"`
+	DefaultLanguage types.String `tfsdk:"default_language"`
+	Database        types.String `tfsdk:"database"`
+	Roles           types.List   `tfsdk:"roles"`
+	Server          *Server      `tfsdk:"server"`
 }
 
 type AadLogin struct {

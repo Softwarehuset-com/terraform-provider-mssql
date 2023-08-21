@@ -15,19 +15,17 @@ type AccessTokenConnector struct {
 }
 
 func (c *AccessTokenConnector) Connect(ctx context.Context) (driver.Conn, error) {
-	tflog.Info(ctx, "fixing", map[string]interface{}{})
 	getTokenFromCommand := exec.Command("az", "account", "get-access-token", "--scope=https://database.windows.net/.default", "--query=accessToken", "--output=tsv")
 	accessToken, err := getTokenFromCommand.Output()
-	tflog.Info(ctx, "generated access token", map[string]interface{}{
-		"accessToken": string(accessToken),
+	tflog.Debug(ctx, "generated access token", map[string]interface{}{
+		"accessToken": fmt.Sprintf("%s...", accessToken[0:10]),
 	})
 	if err != nil {
 		return nil, err
 	}
-	tflog.Info(ctx, "finallyy CALLECED!!!")
 
 	stringConn := fmt.Sprintf("server=%s;port=%s;password=%s;database=%s;fedauth=ActiveDirectoryServicePrincipalAccessToken;",
-		c.connection.Host, c.connection.Port, string(accessToken), "master")
+		c.connection.Host, c.connection.Port, string(accessToken), c.connection.Database)
 
 	db, err := sql.Open(azuread.DriverName, stringConn)
 	return db.Driver().Open(stringConn)

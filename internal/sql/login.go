@@ -3,6 +3,7 @@ package sql
 import (
 	"context"
 	"database/sql"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/softwarehuset/mssql/internal/model"
 )
 
@@ -10,19 +11,27 @@ var _ SqlLoginConnector = &Connector{}
 
 func (c *Connector) GetLogin(ctx context.Context, name string) (*model.SqlUserLogin, error) {
 	var login model.SqlUserLogin
+	var loginName = ""
+	var DefaultDatabase = ""
+	var DefaultLanguage = ""
 	err := c.QueryRowContext(ctx,
 		"SELECT name, default_database_name, default_language_name FROM [master].[sys].[sql_logins] WHERE [name] = @name",
 		func(r *sql.Row) error {
-			return r.Scan(&login.LoginName, &login.DefaultDatabase, &login.DefaultLanguage)
+			return r.Scan(&loginName, &DefaultDatabase, &DefaultLanguage)
 		},
 		sql.Named("name", name),
 	)
 	if err != nil {
+
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
 		return nil, err
 	}
+
+	login.LoginName = basetypes.NewStringValue(loginName)
+	login.DefaultDatabase = basetypes.NewStringValue(DefaultDatabase)
+	login.DefaultLanguage = basetypes.NewStringValue(DefaultLanguage)
 	return &login, nil
 }
 
@@ -46,7 +55,7 @@ func (c *Connector) CreateLogin(ctx context.Context, name, password, defaultData
           EXEC (@sql)`
 	database := "master"
 	return c.
-		setDatabase(&database).
+		setDatabase(ctx, &database).
 		ExecContext(ctx, cmd,
 			sql.Named("name", name),
 			sql.Named("password", password),
